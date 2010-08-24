@@ -16,6 +16,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,13 +24,43 @@
 #include <dirent.h>
 #include <sploitshell.h>
 
+char* prompts[] = {
+	"(\033[31mshellsploit\033[0m)-$ ",
+	"(\033[1;32msploit\033[1;31m@\033[1;32mshell\033[0m) % ",
+	"(\033[1;34mexploit-shell\033[0m) >> ",
+	"\033[4msplua\033[0m exploit( %s ) >> "
+};
+
+int now_prompt;
+
 char*
 current_prompt(int r)
 {
+	char* line;
+
+	now_prompt = r;
+
 	if(strcmp(config[5].value,"random"))
-		return config[5].value;
-	else
+	{
+		line = malloc( strlen(config[5].value) + 25 );
+
+		if(session_opened)
+			sprintf(line, config[5].value, session_opened );
+		else
+			sprintf(line, config[5].value, "current" );
+
+		return line;
+	} else {
+		if( r == 3 )
+		{
+			line = malloc( strlen(prompts[ r ]) + 10 );
+			sprintf(line, prompts[ r ], "current" );
+
+			return line;
+		}
+
 		return prompts[ r ];
+	}
 }
 
 void
@@ -56,6 +87,39 @@ resource_file( char* file )
 		printf("\033[31m* Shellcode's path not found.\033[0m\n");
 
 	free(path);
+}
+
+void
+hexDump(unsigned char* buf, int dlen)
+{
+	char	c[17];
+	int	i, ct;
+
+	for (i = 0; i < dlen; ++i)
+	{
+		if(i != 0 && (i % 2) == 0)
+			putchar(' ');
+
+		if (i != 0 && (i % 16) == 0)
+		{
+			c[16] = '\0';
+
+			printf("  %s\n", c);
+		}
+
+		ct = buf[i] & 0xff;
+
+		c[i % 16] = (ct >= ' ' && ct <= '~') ? ct : '.';
+
+		printf("%02x", ct);
+	}
+
+	c[i % 16] = '\0';
+
+	for (; i % 16; ++i)
+		printf("   ");
+
+	printf("\t%s\n", c);
 }
 
 void
@@ -187,8 +251,10 @@ sploitPrint( struct sploitVar var )
 
 	char* msgs[] = { "#%d NOP sled, %d bytes",
 				  "#%d JMP %d bytes, to #%d",
+				  "#%d JMP %d bytes, to 0x%x",
 				  "#%d EIP  0x%x",
-				  "#%d Payload, %d bytes" };
+				  "#%d Payload, %d bytes",
+				  "#%d Assembly code, %d bytes" };
 
 	char* message;
 
@@ -201,20 +267,33 @@ sploitPrint( struct sploitVar var )
 			len = strlen(message);
 			break;
 		case sploit_jump:
-			message = malloc(strlen(msgs[1]) + 15);
-			sprintf(message, msgs[1], var.id, strlen(var.data), var.addr);
+			message = malloc(strlen(msgs[1]) + 25);
+
+			if( env_cur > var.addr )
+				sprintf(message, msgs[1], var.id, strlen(var.data), var.addr);
+			else
+				sprintf(message, msgs[2], var.id, strlen(var.data), var.addr);
+
+			if(var.set == 0)
+				sprintf(message, "#%d JMP , NULL for now", var.id );
 
 			len = strlen(message);
 			break;
 		case sploit_eip:
-			message = malloc(strlen(msgs[2]) + 15);
-			sprintf(message, msgs[2], var.id, var.addr);
+			message = malloc(strlen(msgs[3]) + 15);
+			sprintf(message, msgs[3], var.id, var.addr);
 
 			len = strlen(message);
 			break;
 		case sploit_shellcode:
-			message = malloc(strlen(msgs[3]) + 10);
-			sprintf(message, msgs[3], var.id, strlen(var.data));
+			message = malloc(strlen(msgs[4]) + 10);
+			sprintf(message, msgs[4], var.id, strlen(var.data));
+
+			len = strlen(message);
+			break;
+		case sploit_assembly:
+			message = malloc(strlen(msgs[5]) + 15);
+			sprintf(message, msgs[5], var.id, var.addr);
 
 			len = strlen(message);
 			break;
@@ -312,7 +391,7 @@ nopsled(shCtx* ctx)
 	char* choices[] = { "Random string", "Given string" };
 	int choice, i, len;
 
-	struct sploitVar sled = { 0, sploit_nopsled, NULL, 0 };
+	struct sploitVar sled = { 0, sploit_nopsled, NULL, 0, 0 };
 
 	choice = menu( choices, 2 );
 
@@ -381,9 +460,6 @@ save(shCtx* ctx)
 		sprintf(pathname, "session.%d", max);
 	} else
 		pathname = xstrdup(config[1].value);
-
-	if(session_opened)
-		pathname = session_opened;
 
 	if(!(fp = fopen(pathname, "wb")))
 	{
@@ -466,8 +542,9 @@ save(shCtx* ctx)
 int
 set(shCtx* ctx)
 {
-	int i;
+	int i,j,size = 0;
 	int conf_size = sizeof(config) / sizeof(struct envp);
+	char* tmp;
 
 	if(ctx->argc < 3)
 	{
@@ -480,8 +557,34 @@ set(shCtx* ctx)
 	}
 
 	for(i = 0;i < conf_size;i++)
+	{
 		if(!strcmp( ctx->args[1], config[i].name))
+		{
+			if(ctx->argc > 3)
+			{
+				for(j = 3;j < ctx->argc;j++)
+					size += strlen(ctx->args[j]);
+
+				tmp = malloc( size );
+				sprintf(tmp, "%s ", ctx->args[2] );
+
+				for(j = 3;j < ctx->argc;j++)
+				{
+					strcat( tmp, ctx->args[j] );
+					strcat( tmp, " ");
+				}
+
+				ctx->args[2] = xstrdup( tmp );
+
+				free( tmp );
+			}
+
+			if(!strcmp(ctx->args[1],"prompt") && !strcmp(ctx->args[2],"current"))
+				ctx->args[2] = xstrdup( prompts[now_prompt] );
+
 			config[i].value = xstrdup( ctx->args[2] );
+		}
+	}
 
 	return 0;
 }
@@ -497,6 +600,7 @@ show(shCtx* ctx)
 		fprintf(stderr, "usage: show <arg>, where \'arg\' is:\n"
 					 "config  - To show the configuration of the session.\n"
 					 "exploit - To show the current scheme of the exploit.\n"
+					 "id      - To show the content of an ID.\n"
 				);
 
 		return 1;
@@ -505,11 +609,37 @@ show(shCtx* ctx)
 	if(!strcmp( ctx->args[1], "config" ))
 	{
 		for(i = 0;i < conf_size;i++)
-			printf("%s  =>  %s\n", config[i].name, config[i].value);
+			printf("%s    =>    \"%s\"\n", config[i].name, config[i].value);
 	} else if(!strcmp( ctx->args[1], "exploit" ))
 	{
 		for(i = 0;i < env_cur;i++)
 			sploitPrint( sploit_env[i] );
+	} else if(!strcmp( ctx->args[1], "id" ))
+	{
+		int size,id;
+
+		if(!ctx->args[2])
+		{
+			printf("* ID missing.\n");
+
+			return 1;
+		}
+
+		id = atoi(ctx->args[2]);
+
+		if( env_cur < id )
+		{
+			printf("* ID not found.\n");
+
+			return 1;
+		}
+
+		size = strlen(sploit_env[id].data);
+
+		if(sploit_env[id].type == sploit_assembly)
+			size = sploit_env[id].addr;
+
+		hexDump( (unsigned char*)sploit_env[id].data, size );
 	}
 
 	return 0;
@@ -532,6 +662,8 @@ load(shCtx* ctx)
 
 		return 1;
 	}
+
+	config[1].value = xstrdup( config[2].value );
 
 	dummy = fread( &len, sizeof(int), 1, fp);
 
@@ -576,7 +708,150 @@ load(shCtx* ctx)
 		buf = (strchr( buf, '\0' )) + 1;
 	}
 
+	fclose( fp );
+
 	printf("* Session load.\n");
+
+	return 0;
+}
+
+int
+jump(shCtx* ctx)
+{
+	char* line;
+	char* choices[] = { "Given ID", "Given address", "NULL for now" };
+
+	int choice = menu( choices, 3 );
+
+	struct sploitVar jump = { 0, sploit_jump, "", 0, 1 };
+
+	switch(choice)
+	{
+		case 1:
+			jump.addr = getLen("ID:");
+
+			if(jump.addr > env_cur)
+			{
+				printf("* Error, no ID found.\n");
+
+				jump.set = 0;
+			}
+			break;
+		case 2:
+			line = getLine("Address: ");
+
+			sscanf( line, "0x%x", &jump.addr );
+			break;
+		case 3:
+			jump.set = 0;
+			break;
+		default:
+			jump.set = 0;
+			break;
+	}
+
+	sploitAddVar( jump );
+
+	return 0;
+}
+
+int
+assembly(shCtx* ctx)
+{
+	char* choices[] = { "From file", "From stdin in C format ( \\x?? )" };
+	int choice = menu( choices, 2 );
+	FILE* fp;
+	char* path;
+
+	int size,dummy;
+
+	struct sploitVar assembly = { 0, sploit_assembly, NULL, 0, 0 };
+
+	if(choice == 1)
+	{
+		path = getLine("Path: ");
+
+		if(!(fp = fopen(path, "r")))
+		{
+			fprintf(stderr, "* Error opening the file.\n");
+
+			free( path );
+
+			return 1;
+		}
+
+		free( path );
+
+		fseek( fp, 0, SEEK_END );
+		size = (int) ftell( fp );
+		fseek( fp, 0, SEEK_SET );
+
+		assembly.data = malloc( size );
+		assembly.addr = size;
+
+		dummy = fread( assembly.data, size, 1, fp );
+	} else {
+		path = getLine("Assembly in C format ( \\x?? )\n");
+
+		size = strlen(path) / 4;
+
+		assembly.data = malloc( size );
+		assembly.addr = size;
+
+		for(dummy = 0;dummy < size;dummy++)
+			assembly.data[dummy] = strtol( strndup( path + (dummy * 4) + 2, 2 ), NULL, 16);
+	}
+
+	sploitAddVar( assembly );
+
+	return 0;
+}
+
+int
+generate(shCtx* ctx)
+{
+	int i,j,dummy,size;
+	FILE* fp;
+
+	if(!(fp = fopen(config[3].value, "w" )))
+	{
+		fprintf(stderr, "* Error opening the file.\n");
+
+		return 1;
+	}
+
+	for(i = 0;i < env_cur;i++)
+	{
+		if(!strcmp(config[0].value, "raw"))
+		{
+			if(sploit_env[i].type == sploit_assembly )
+				dummy = fwrite( sploit_env[i].data, sploit_env[i].addr, 1, fp );
+			else if (sploit_env[i].type == sploit_eip )
+				dummy = fwrite( &sploit_env[i].addr, sizeof(unsigned int), 1, fp );
+			else
+				dummy = fwrite( sploit_env[i].data, strlen(sploit_env[i].data), 1, fp );
+		} else {
+			size = strlen(sploit_env[i].data);
+
+			if(sploit_env[i].type == sploit_assembly )
+				size = sploit_env[i].addr;
+
+			if( sploit_env[i].type == sploit_eip )
+			{
+				sploit_env[i].data = malloc( sizeof(unsigned int) );
+				memcpy( sploit_env[i].data, &sploit_env[i].addr, sizeof(unsigned int) );
+
+				size = sizeof(unsigned int);
+			}
+
+			for( j = 0;j < size;j++ )
+				fprintf(fp, "\\x%.2x", (unsigned char) sploit_env[i].data[j] );
+		}
+	}
+
+	fclose( fp );
+
+	printf("* Exploit generated with success.\n");
 
 	return 0;
 }

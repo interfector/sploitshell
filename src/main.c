@@ -32,8 +32,7 @@ main(int argc,char **argv)
 	shCtx ctx;
 	int i = 0;
 
-	int prompt_size = sizeof(prompts) / sizeof(prompts[0]);
-	int p_rand = rand() % prompt_size;
+	int p_rand = rand() % 4;
 
 	banner();
 

@@ -23,12 +23,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-static char* prompts[] = {
-	"(\033[31mshellsploit\033[0m) ",
-	"[\033[1;32msploit\033[1;31m@\033[1;32mshell\033[0m] %> ",
-	"(\033[33mexploit-shell\033[0m) >> "
-};
-
 #define pdie(x) do{ perror(x); exit(1); }while(1)
 
 char* generator(const char*,int);
@@ -38,9 +32,10 @@ char* xstrdup(char*);
 
 void init(void) __attribute__((constructor));
 
-static char* commands [] ={ "exit", "generate", "nopsled" , "quit", "eip", "jump", "help", "load", "shellcode", "set", "save", "show" };
+static char* commands [] ={ "assembly", "exit", "generate", "nopsled" , "quit", "eip", "jump", "help", "load", "shellcode", "set", "save", "show" };
 
 #define HELP_MSG "nopsled   - Generate a NOP sled.\n" \
+			  "assembly  - Append assembly directly to the exploit.\n" \
 			  "jump      - Set a jump to a specific address.\n" \
 			  "eip       - Overwrite EIP to point to a specific address.\n" \
 			  "shellcode - Set the shellcode to execute.\n" \
@@ -52,7 +47,7 @@ static char* commands [] ={ "exit", "generate", "nopsled" , "quit", "eip", "jump
 			  "help      - Show this help.\n" \
 			  "quit|exit - Exit."
 
-typedef enum { sploit_nopsled, sploit_jump, sploit_eip, sploit_shellcode } sploit_type;
+typedef enum { sploit_nopsled, sploit_jump, sploit_eip, sploit_shellcode, sploit_assembly } sploit_type;
 
 struct envp {
 	char* name;
@@ -65,6 +60,8 @@ struct sploitVar {
 
 	char* data;
 	unsigned int addr;
+
+	int set;
 };
 
 typedef struct {
@@ -98,8 +95,14 @@ int save(shCtx*);
 int set(shCtx*);
 int show(shCtx*);
 int load(shCtx*);
+int jump(shCtx*);
+int assembly(shCtx*);
+int generate(shCtx*);
 
 static sploitCtx core[] = {
+	{ "generate", generate },
+	{ "assembly", assembly },
+	{ "jump", jump },
 	{ "load", load },
 	{ "show", show },
 	{ "set", set },
