@@ -29,8 +29,6 @@ static char* prompts[] = {
 	"(\033[33mexploit-shell\033[0m) >> "
 };
 
-static int prompt_size = sizeof(prompts) / sizeof(prompts[0]);
-
 #define pdie(x) do{ perror(x); exit(1); }while(1)
 
 char* generator(const char*,int);
@@ -86,7 +84,9 @@ static struct envp config[] = {
 	{ "style", "raw" }, /* styles:   raw,c */
 	{ "output", "default" }, /* append the number of session */
 	{ "input", ".session.last" },
-	{ "generated", "shellcode.out" }
+	{ "generated", "shellcode.out" },
+	{ "shellpath", "$HOME/.splua" },
+	{ "prompt", "random" }
 };
 
 static struct sploitVar* sploit_env = NULL;
@@ -110,5 +110,7 @@ static sploitCtx core[] = {
 
 int lineParse(char*, shCtx* );
 void banner(void);
+
+static char* session_opened = NULL;
 
 #endif /* _SHSPLOIT_H_ */

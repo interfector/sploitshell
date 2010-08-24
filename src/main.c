@@ -22,6 +22,9 @@
 #include <string.h>
 #include <sploitshell.h>
 
+extern char* current_prompt( int );
+extern void resource_file( char* );
+
 int
 main(int argc,char **argv)
 {
@@ -29,11 +32,14 @@ main(int argc,char **argv)
 	shCtx ctx;
 	int i = 0;
 
-	char* current_prompt = prompts[ rand() % prompt_size ];
+	int prompt_size = sizeof(prompts) / sizeof(prompts[0]);
+	int p_rand = rand() % prompt_size;
 
 	banner();
 
-	while( (line = readline( current_prompt )) )
+	resource_file( argv[1] );
+
+	while( (line = readline( current_prompt( p_rand ) )) )
 	{
 		rl_bind_key('\t',rl_complete);
 

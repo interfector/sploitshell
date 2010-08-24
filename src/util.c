@@ -19,8 +19,44 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <sploitshell.h>
+
+char*
+current_prompt(int r)
+{
+	if(strcmp(config[5].value,"random"))
+		return config[5].value;
+	else
+		return prompts[ r ];
+}
+
+void
+resource_file( char* file )
+{
+	char* home = getenv("HOME");
+	char* path;
+
+	if( file )
+	{
+		config[2].value = xstrdup( file );
+		if( !load( NULL ))
+			session_opened = xstrdup( file );
+	}
+
+	if(strcmp(config[4].value, "$HOME/.splua"))
+		path = xstrdup( config[4].value );
+	else {
+		path = malloc( strlen(home) + 10 );
+		sprintf(path, "%s/.splua/", home);
+	}
+
+	if(access(path, F_OK))
+		printf("\033[31m* Shellcode's path not found.\033[0m\n");
+
+	free(path);
+}
 
 void
 init()
@@ -139,8 +175,6 @@ sploitAddVar( struct sploitVar var )
 {
 	if(!(env_cur % ENV_BLOCK))
 		sploit_env = realloc( sploit_env, (ENV_BLOCK + env_cur) * sizeof(struct sploitVar) );
-
-//	printf("0x%x(%c)\n", var.data, var.data[0]);
 
 	var.id = env_cur;
 	sploit_env[ env_cur++ ] = var;
@@ -348,6 +382,9 @@ save(shCtx* ctx)
 	} else
 		pathname = xstrdup(config[1].value);
 
+	if(session_opened)
+		pathname = session_opened;
+
 	if(!(fp = fopen(pathname, "wb")))
 	{
 		fprintf(stderr,"* Error opening the file.\n");
@@ -443,20 +480,9 @@ set(shCtx* ctx)
 	}
 
 	for(i = 0;i < conf_size;i++)
-	{
 		if(!strcmp( ctx->args[1], config[i].name))
-		{
 			config[i].value = xstrdup( ctx->args[2] );
 
-			return 0;
-		}
-	}
-/*
-	config = (struct envp*)realloc(config, conf_size + sizeof(struct envp));
-
-	config[conf_size].name = strdup( ctx->args[1] );
-	config[conf_size].value = strdup( ctx->args[1] );
-*/
 	return 0;
 }
 
