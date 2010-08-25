@@ -1,3 +1,5 @@
 2010-08-24 nex <nex@autistici.org>
 
-* main.c: (null)
+* ui.c: the user interface
+
+* main.c: start user interface

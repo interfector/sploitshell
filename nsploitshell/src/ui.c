@@ -1,3 +1,6 @@
+
+#define _GNU_SOURCE
+
 #include <string.h>
 #include <ui.h>
 
@@ -9,18 +12,24 @@ curses_init(void)
 	noecho();
 	keypad(stdscr, TRUE);
 
-	refresh();
+	cdkscreen = initCDKScreen( stdscr );
+
+	initCDKColor();
+
+	refreshScreen();
 }
 
 void
 curses_end(void)
 {
-	endwin();
+	destroyCDKScreen( cdkscreen );
+	endCDK();
 }
 
 int
 NCMessageBox(int flag, char* text, ...)
 {
+	
 	WINDOW *msg_win, *button;
 	int ch;
 	int x,y,len;
@@ -73,4 +82,52 @@ NCMessageBox(int flag, char* text, ...)
 	delwin(msg_win);
 
 	return len;
+	
+/*
+	char* bt[] = { "OK" };
+
+	popupDialog( cdkscreen, &text, 1, bt, 1 );
+*/
 }
+
+char*
+getCDKAssembly( )
+{
+	CDKMENTRY* widget;
+	int size,i;
+	char* code;
+	char* line;
+
+	widget = newCDKMentry( cdkscreen, CENTER, CENTER, 
+					   "Assembly code in C format ( \\x?? )\n",
+					   "", A_BOLD, '.', vMIXED,
+					   40, 20, 20, 0, 1, 0);
+
+	refreshScreen();
+
+	activateCDKMentry( widget, 0 );
+
+	line = strdup( widget->info );
+
+	destroyCDKMentry( widget );
+
+	refreshScreen();
+
+	size = strlen(line) / 4;
+
+	code = malloc( size );
+
+	for(i = 0;i < size;i++)
+		code[i] = strtol( strndup( line + (i * 4) + 2, 2 ), NULL, 16 );
+
+	free( line );
+
+	return code;
+}
+
+int
+setCDKPref( )
+{
+	return 0;
+}
+

@@ -4,7 +4,11 @@
 int
 main(int argc,char **argv)
 {
-	NCMessageBox( MSG_INFO, "Curses starts!" );
+	char* code = getCDKAssembly( );
+
+	setCDKPref( );
+
+	ui_error( msg_error[LOAD_ERR] );
 
 	return 0;
 }

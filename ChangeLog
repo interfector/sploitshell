@@ -1,3 +1,5 @@
 2010-08-24 nex <nex@autistici.org>
 
-* main.c: (null)
+* util.c: the whole program
+
+* main.c:  reading loop

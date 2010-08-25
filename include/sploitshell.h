@@ -32,7 +32,7 @@ char* xstrdup(char*);
 
 void init(void) __attribute__((constructor));
 
-static char* commands [] ={ "assembly", "exit", "generate", "nopsled" , "quit", "eip", "jump", "help", "load", "shellcode", "set", "save", "show" };
+static char* commands [] ={ "modify", "move", "delete", "assembly", "exit", "generate", "nopsled" , "quit", "eip", "jump", "help", "load", "shellcode", "set", "save", "show" };
 
 #define HELP_MSG "nopsled   - Generate a NOP sled.\n" \
 			  "assembly  - Append assembly directly to the exploit.\n" \
@@ -42,6 +42,9 @@ static char* commands [] ={ "assembly", "exit", "generate", "nopsled" , "quit", 
 			  "load      - Loads a previous session of sploitshell.\n" \
 			  "save      - Save the current sessions of sploitshell.\n" \
 			  "generate  - Generate the current exploit.\n" \
+			  "modify    - Modify an entry from the exploit scheme.\n" \
+			  "move      - Move entries from exploit scheme.\n" \
+			  "delete    - Delete entry from the exploit scheme.\n" \
 			  "set       - Set some environment variables.\n" \
 			  "show      - Show the current setting.\n" \
 			  "help      - Show this help.\n" \
@@ -98,8 +101,18 @@ int load(shCtx*);
 int jump(shCtx*);
 int assembly(shCtx*);
 int generate(shCtx*);
+int delete(shCtx*);
+int move(shCtx*);
+int modify(shCtx*);
+int shellcode(shCtx*);
+int eip(shCtx*);
 
 static sploitCtx core[] = {
+	{ "eip", eip },
+	{ "shellcode", shellcode },
+	{ "modify", modify },
+	{ "move", move },
+	{ "delete", delete },
 	{ "generate", generate },
 	{ "assembly", assembly },
 	{ "jump", jump },

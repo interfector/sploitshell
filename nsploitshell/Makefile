@@ -1,15 +1,15 @@
-# nsploitshell
+# nsploitsh
 
 VERSION = 0.0.1
 
 # includes and libs
-LIBS = -lncurses
+LIBS = -lncurses -lcdk
 
 # flags
 CFLAGS = -Wall -O3 ${LIBS} -DVERSION=\"${VERSION}\" -I./include
 
 SRC = src/main.c src/ui.c
-BIN = nsploitshell
+BIN = nsploitsh
 
 all:
 	gcc -o $(BIN) $(SRC) $(CFLAGS)
@@ -17,5 +17,5 @@ all:
 clean:
 	rm -f $(BIN)
 
-install: all
+install:
 	cp -f $(BIN) /usr/local/bin/

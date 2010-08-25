@@ -14,9 +14,13 @@ BIN = sploitsh
 all:
 	gcc -o $(BIN) $(SRC) $(CFLAGS)
 
+ncurses:
+	make -C nsploitshell
+
 clean:
 	make -C nsploitshell clean
 	rm -f $(BIN)
 
-install: all
+install:
 	cp -f $(BIN) /usr/local/bin/
+	make -C nsploitshell install
