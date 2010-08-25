@@ -15,6 +15,7 @@ all:
 	gcc -o $(BIN) $(SRC) $(CFLAGS)
 
 clean:
+	make -C nsploitshell clean
 	rm -f $(BIN)
 
 install: all

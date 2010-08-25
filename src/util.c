@@ -490,7 +490,10 @@ save(shCtx* ctx)
 
 	for(i = 0;i < env_cur;i++)
 	{
-		dummy = fwrite( sploit_env[i].data, strlen(sploit_env[i].data) , 1, fp);
+		if(sploit_env[i].type == sploit_assembly)
+			dummy = fwrite( sploit_env[i].data, sploit_env[i].addr , 1, fp);
+		else
+			dummy = fwrite( sploit_env[i].data, strlen(sploit_env[i].data) , 1, fp);
 		fputc( 0, fp);
 	}
 
@@ -530,7 +533,10 @@ save(shCtx* ctx)
 
 	for(i = 0;i < env_cur;i++)
 	{
-		dummy = fwrite( sploit_env[i].data, strlen(sploit_env[i].data) , 1, fp);
+		if(sploit_env[i].type == sploit_assembly)
+			dummy = fwrite( sploit_env[i].data, sploit_env[i].addr , 1, fp);
+		else
+			dummy = fwrite( sploit_env[i].data, strlen(sploit_env[i].data) , 1, fp);
 		fputc( 0, fp);
 	}
 
