@@ -525,49 +525,9 @@ save(shCtx* ctx)
 
 	printf("* Session saved at \'%s\'.\n", pathname );
 
+	dummy = symlink( pathname, ".session.last" );
+
 	free(pathname);
-
-	pathname = xstrdup(".session.last");
-
-	if(!(fp = fopen(pathname, "wb")))
-	{
-		fprintf(stderr,"* Error opening the file.\n");
-		return 1;
-	}
-
-	dummy = fwrite( &env_cur, sizeof(int), 1, fp);
-
-	for(i = 0;i < (sizeof(config) / sizeof(struct envp));i++)
-		dummy = fwrite( &config[i], sizeof(struct envp), 1, fp);
-
-	for(i = 0;i < env_cur;i++)
-			dummy = fwrite( &sploit_env[i], sizeof(struct sploitVar), 1, fp);
-
-	for(i = 0;i < (sizeof(config) / sizeof(struct envp));i++)
-	{
-		dummy = fwrite( config[i].name, strlen(config[i].name) , 1, fp);
-		fputc( 0, fp);
-	}
-
-	for(i = 0;i < (sizeof(config) / sizeof(struct envp));i++)
-	{
-		dummy = fwrite( config[i].value, strlen(config[i].value) , 1, fp);
-		fputc( 0, fp);
-	}
-
-	for(i = 0;i < env_cur;i++)
-	{
-		if(sploit_env[i].id != -1)
-		{
-			if(sploit_env[i].type == sploit_assembly)
-				dummy = fwrite( sploit_env[i].data, sploit_env[i].addr , 1, fp);
-			else
-				dummy = fwrite( sploit_env[i].data, strlen(sploit_env[i].data) , 1, fp);
-			fputc( 0, fp);
-		}
-	}
-
-	fclose( fp );
 
 	return 0;
 }
@@ -940,7 +900,7 @@ delete(shCtx* ctx)
 int
 move(shCtx* ctx)
 {
-	int id,id2,i;
+	int id,id2/*,i*/;
 
 	struct sploitVar tmp;
 

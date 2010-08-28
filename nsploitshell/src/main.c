@@ -1,14 +1,15 @@
 #include <sploitshell.h>
+#include <pthread.h>
 #include <ui.h>
 
 int
 main(int argc,char **argv)
 {
-	char* code = getCDKAssembly( );
+	pthread_t thread;
 
-	setCDKPref( );
+	pthread_create( &thread, NULL,(void* (*)(void*)) initCDKMenu, NULL );
 
-	ui_error( msg_error[LOAD_ERR] );
+	while(1) sleep( 1 );
 
 	return 0;
 }

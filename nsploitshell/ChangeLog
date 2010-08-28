@@ -1,5 +1,7 @@
 2010-08-24 nex <nex@autistici.org>
 
+* un.c: CDK implementation for a better UI
+
 * ui.c: the user interface
 
 * main.c: start user interface

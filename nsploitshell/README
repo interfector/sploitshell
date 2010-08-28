@@ -1,1 +1,6 @@
-SploitShell in a pseudo-GUI with libncurses
+SploitShell in a pseudo-GUI with libncurses and libcdk
+
+Deps:
+
+- libncurses5
+- libcdk

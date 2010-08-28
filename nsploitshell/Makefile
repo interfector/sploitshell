@@ -3,12 +3,12 @@
 VERSION = 0.0.1
 
 # includes and libs
-LIBS = -lncurses -lcdk
+LIBS = -lncurses -lcdk -lpthread
 
 # flags
 CFLAGS = -Wall -O3 ${LIBS} -DVERSION=\"${VERSION}\" -I./include
 
-SRC = src/main.c src/ui.c
+SRC = src/main.c src/ui.c src/util.c
 BIN = nsploitsh
 
 all:

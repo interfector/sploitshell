@@ -10,11 +10,25 @@
 #define MSG_WARN	1
 #define MSG_ERR	2
 
-void curses_init(void) __attribute__((constructor));
-void curses_end(void)  __attribute__((destructor));
+/* CDK and menu initialization */
+
+void curses_init( void ) __attribute__((constructor));
+void curses_end( void )  __attribute__((destructor));
+void initCDKMenu( void* );
+void aboutCDKShell( void );
+
+/* Session management function */
+int loadCDKSession( void );
+//int saveCDKSession( void );
+
+/* CDK sploitshell function */
 
 int NCMessageBox( int, char*, ... ); /* flag, text */
-char* getCDKAssembly( void );
+int getCDKAssembly( void );
+int getCDKNOPsled( void );
+int getCDKShellcode( void );
+int getCDKJump( void );
+int getCDKEip( void );
 
 #define ui_error( ... ) NCMessageBox(MSG_ERR, __VA_ARGS__ )
 
@@ -23,7 +37,8 @@ typedef enum { FILE_OPEN,
 			ID_MISS,
 			ARG_MISS,
 			SHPATH_NFOUND,
-			LOAD_ERR
+			LOAD_ERR,
+			EMPTY_STR
 		   } errors_t;
 
 static char*  msg_error[] =  { 
@@ -32,7 +47,8 @@ static char*  msg_error[] =  {
 	"ID missing", 
 	"Argument missing", 
 	"Shellcode path not found", 
-	"Error loading the session file"
+	"Error loading the session file",
+	"Empty string!"
 };
 
 #define refreshScreen() refreshCDKScreen( cdkscreen )
